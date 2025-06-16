@@ -35,7 +35,7 @@ The user interface includes **dynamic visualizations** and **calendar-based view
 
 - **FullCalendar** integration to display historical health data.
     <p align="center">
-  <img src="https://github.com/user-attachments/assets/7bec7785-48a9-4653-aeb9-02342eaa73ec" height="400px">
+  <img src="https://github.com/user-attachments/assets/7d79bc30-e502-4580-b9f9-517580b86afc" height="400px">
     </p>
 - Responsive UI for both **desktop and mobile** access.
 
