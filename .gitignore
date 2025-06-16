@@ -1,0 +1,79 @@
+# Ignore Maven or Gradle build directories
+/target/
+/build/
+
+# Ignore dependency directories
+**/node_modules/
+
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE-specific files
+*.iml
+.idea/
+.project
+.classpath
+.settings/
+out/
+
+# Ignore build output
+*.jar
+*.war
+*.ear
+
+# Ignore generated sources
+.generated/
+
+# Ignore test reports
+/test-output/
+/test-reports/
+/coverage/
+
+# Ignore application-specific configurations
+*.env
+*.properties
+*.yml
+
+# Ignore IntelliJ IDEA
+.idea/**
+*.iws
+*.ipr
+*.iml
+
+# Ignore Eclipse project files
+.project
+.classpath
+.settings/
+
+# Ignore NetBeans project files
+nbproject/private/
+build/
+dist/
+
+# Ignore VS Code
+.vscode/
+
+# Ignore logs and temporary files
+logs/
+*.log
+*.tmp
+*.bak
+
+# Ignore Mac system files
+.DS_Store
+
+# Ignore Windows system files
+Thumbs.db
+$RECYCLE.BIN/
+
+# Ignore local environment configuration files
+.env.local
+.env.*.local
+
+#ignore private files like credentials.json
+/src/resources/credentials.json

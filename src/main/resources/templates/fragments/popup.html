@@ -1,0 +1,85 @@
+<div th:fragment="alerts(successMessage, errorMessage)">
+    <!-- Alert per warning -->
+    <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible fade show position-fixed bottom-0 end-0 m-4 shadow" role="alert" style="z-index: 9999;">
+        <strong>Attenzione!</strong> <span th:utext="${errorMessage}">Errore generico</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+    </div>
+
+    <!-- figura sanitaria/paziente aggiunto con successo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-4 shadow" role="alert" style="z-index: 9999;">
+        <span th:utext="${successMessage}">Successo!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+    </div>
+
+    <!-- Modal di conferma eliminazione -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">Conferma eliminazione</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+
+                <div class="modal-body">
+                    Sei sicuro di voler eliminare <strong id="modalItemName"></strong>?
+                </div>
+
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <a id="confirmDeleteBtn" href="#" class="btn btn-danger">Elimina</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- funzione per mostrare il popup -->
+    <script>
+        const linkModal = document.getElementById('linkModal');
+
+        if (linkModal && linkModal.dataset.show === "true") {
+            const modal = new bootstrap.Modal(linkModal);
+            modal.show();
+        }
+    </script>
+
+    <!-- il messaggio di warning per eliminazione paziente scompare dopo 4 secondi -->
+    <script>
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                bsAlert.close();
+            });
+        }, 4000); // 4 secondi
+    </script>
+
+    <!-- popup elimina paziente/figura sanitaria -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteModal = document.getElementById('deleteModal');
+
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const itemId = button.getAttribute('data-id');
+                const itemName = button.getAttribute('data-name');
+                const itemType = button.getAttribute('data-type'); // "patient" o "professional"
+
+                console.log('data-type');
+
+                const confirmBtn = deleteModal.querySelector('#confirmDeleteBtn');
+                const modalItemName = deleteModal.querySelector('#modalItemName');
+
+                modalItemName.textContent = itemName;
+
+                if (itemType === 'patient') {
+                    confirmBtn.href = `/patient/delete/${itemId}`;
+                } else if (itemType === 'professional') {
+                    confirmBtn.href = `/healthcare-professional/delete/${itemId}`;
+                }
+            });
+        });
+    </script>
+</div>
+

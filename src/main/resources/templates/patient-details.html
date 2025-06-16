@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml"
+      sec:th="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Patient details">
+    <title>Patient Details</title>
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" th:href="@{/vendor/datatables/datatables.min.css}">
+    <!-- FullCalendar CSS -->
+    <link href="https://unpkg.com/@fullcalendar/core@6.1.10/index.global.min.css" rel="stylesheet" />
+    <!-- FullCalendar JS -->
+    <script th:src="@{/vendor/fullcalendar-6.1.17/dist/index.global.js}"></script>
+    <script th:src="@{/vendor/fullcalendar-6.1.17/packages/core/locales/it.global.js}"></script>
+    <script th:inline="javascript">
+        let events = JSON.parse([[${eventsJson}]]);
+        let margins = JSON.parse([[${margins}]]);
+
+    </script>
+
+    <style>
+        /* FullCalendar event styling */
+        .fc-event {
+            white-space: nowrap;          /* Prevent text from wrapping to next line */
+            overflow: hidden;             /* Hide overflowed text */
+            text-overflow: ellipsis;      /* Show "..." when text is too long */
+            max-width: 100%;              /* Don't exceed cell width */
+            display: inline-block;        /* Needed to control size */
+            vertical-align: middle;       /* Align nicely inside the cell */
+        }
+
+        /* Optional: slightly smaller font for mobile */
+        @media (max-width: 768px) {
+            .fc-event {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar;
+
+            function getHeaderToolbar() {
+                if (window.innerWidth < 768) {
+                    return {
+                        left: 'prev',
+                        center: 'title',
+                        right: 'next'
+                    };
+                } else {
+                    return {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                    };
+                }
+            }
+
+            function getInitialView() {
+                return window.innerWidth < 768 ? 'timeGridDay' : 'dayGridMonth';
+            }
+
+            function renderCalendar() {
+                if (calendar) {
+                    calendar.destroy(); // Destroy previous instance
+                }
+
+                calendar = new FullCalendar.Calendar(calendarEl, {
+                    headerToolbar: getHeaderToolbar(),
+                    initialView: getInitialView(),
+                    locale: 'it',
+                    events: events,
+                    eventContent: function(arg) {
+                        return {
+                            html: `<span class="${arg.event.classNames.join(' ')}">${arg.event.title}</span>`
+                        };
+                    },
+                    titleFormat: window.innerWidth < 768
+                        ? { year: 'numeric', month: 'short', day: 'numeric' } // Shorter date format on mobile
+                        : { year: 'numeric', month: 'long' } // Full month name on desktop
+                });
+
+                calendar.render();
+            }
+
+            renderCalendar();
+
+            window.addEventListener('resize', function() {
+                renderCalendar();
+            });
+
+            const tabTriggerEl = document.querySelector('#interventions-tab');
+            tabTriggerEl.addEventListener('shown.bs.tab', function () {
+                calendar.updateSize();
+            });
+        });
+
+
+
+    </script>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <div th:replace="fragments/navbar :: navbar(loggedUser=${loggedUser})"></div>
+
+    <div class="container mt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active"><a th:href="@{/dashboard}"> Dashboard</a></li>
+            <li class="breadcrumb-item active"><a th:text="${patient.name} + ' ' + ${patient.surname}">Patient</a></li>
+        </ol>
+        <header class="mb-4">
+            <h1><span th:text="${patient.name}">Name</span> <span th:text="${patient.surname}">Surname</span></h1>
+        </header>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="patientTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">Dati anagrafici</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="biometric-tab" data-bs-toggle="tab" data-bs-target="#biometric" type="button" role="tab">Dati biometrici</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="interventions-tab" data-bs-toggle="tab" data-bs-target="#interventions" type="button" role="tab">Interventi</button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body tab-content" id="patientTabsContent">
+                <!-- General Info Tab -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <div class="card-title d-flex justify-content-between align-items-center">
+                        <h3>Informazioni generali</h3>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a sec:authorize="hasRole('COORD') or hasRole('MED_FAM') or hasRole('MED_PAL')"
+                               class="btn btn-outline-warning"
+                               th:href="@{/edit-patient(id=${patient.id})}">
+                                <i class="bi bi-pencil-square"></i>
+                                <span class="d-none d-md-inline"> Modifica</span>
+                            </a>
+                            <a sec:authorize="hasRole('COORD') or hasRole('MED_FAM') or hasRole('MED_PAL')"
+                               th:attr="data-id=${patient.id}, data-name=${patient.name + ' ' + patient.surname}, data-type='patient'"
+                               class="btn btn-outline-danger"
+                               data-bs-toggle="modal"
+                               data-bs-target="#deleteModal">
+                                <i class="bi bi-trash-fill"></i>
+                                <span class="d-none d-md-inline"> Elimina</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <dl sec:authorize="hasRole('COORD') or hasRole('MED_FAM') or hasRole('MED_PAL')"
+                        class="row align-items-center">
+                        <dt class="col-sm-3">Link paziente</dt>
+                        <dd class="col-sm-9">
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="text" class="form-control w-75 fw-bold text-break text-center"
+                                       id="myInput" th:value="${patient.getAuthorizationLink()}" readonly>
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm"
+                                        onclick="copyLink()">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <div id="copiedAlert" class="text-success mt-2 d-none">Link copiato!</div>
+                        </dd>
+                    </dl>
+
+                    <hr>
+
+                    <h5 class="mb-3"> Dati anagrafici </h5>
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Nome</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${patient.name}"></span> </p>
+                        </dd>
+
+                        <dt class="col-sm-3">Cognome</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${patient.surname}"></span> </p>
+                        </dd>
+
+                        <dt class="col-sm-3">Data di nascita</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${#temporals.format(patient.birthDate, 'dd/MM/yyyy')}"></span> </p>
+                        </dd>
+
+                        <dt class="col-sm-3">Sesso</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${patient.sex}"></span> </p>
+                        </dd>
+                    </dl>
+
+                    <hr>
+
+                    <h5 class="mb-3"> Quadro clinico </h5>
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Categoria</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${patient.diseaseCategory.name}"></span> </p>
+                        </dd>
+
+                        <dt class="col-sm-3">Diagnosi</dt>
+                        <dd class="col-sm-9">
+                            <p> <span th:text="${patient.diagnosisDesc}"></span> </p>
+                        </dd>
+
+                    </dl>
+
+                    <hr>
+                    <h5 class="mb-3"> Personale sanitario di riferimento </h5>
+
+                    <dl class="row" th:if="${patient.healthcareProfessionals != null}">
+                        <th:block th:each="hp : ${patient.healthcareProfessionals}"
+                                  th:if="${hp.role.name() != 'INF' and hp.role.name() != 'COORD'}">
+                            <dt class="col-sm-3 fw-bold" th:text="${hp.role.getRole()}">Ruolo</dt>
+                            <dd class="col-sm-9" th:text="${hp.name + ' ' + hp.surname}">Nome Cognome</dd>
+                        </th:block>
+                    </dl>
+
+                </div>
+
+                <!-- Biometric Data Tab -->
+                <div class="tab-pane fade" id="biometric" role="tabpanel" aria-labelledby="biometric-tab">
+                    <!-- Date Selector -->
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Seleziona data:</h5>
+                        <input type="date" id="datePicker" class="form-control w-auto" value="" />
+                    </div>
+
+                    <!-- Cards for MAX, AVG, MIN -->
+                    <div class="row text-center mb-4">
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card text-white bg-primary">
+                                <div class="card-body">
+                                    <i class="bi bi-heart-pulse-fill fs-1"></i>
+                                    <h5 class="card-title">Battito cardiaco</h5>
+                                    <p class="mb-1">Max: <span id="hr-max">--</span></p>
+                                    <p class="mb-1">Media: <span id="hr-avg">--</span></p>
+                                    <p class="mb-0">Min: <span id="hr-min">--</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card text-white bg-success">
+                                <div class="card-body">
+                                    <i class="bi bi-droplet-fill fs-1"></i>
+                                    <h5 class="card-title">SpO₂</h5>
+                                    <p class="mb-1">Max: <span id="spo2-max">--</span>%</p>
+                                    <p class="mb-1">Media: <span id="spo2-avg">--</span>%</p>
+                                    <p class="mb-0">Min: <span id="spo2-min">--</span>%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card text-white bg-warning">
+                                <div class="card-body">
+                                    <i class="bi bi-emoji-frown-fill fs-1"></i>
+                                    <h5 class="card-title">Stress</h5>
+                                    <p class="mb-1">Max: <span id="stress-max">--</span></p>
+                                    <p class="mb-1">Media: <span id="stress-avg">--</span></p>
+                                    <p class="mb-0"><br></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card text-white bg-info">
+                                <div class="card-body">
+                                    <i class="bi bi-fast-forward-fill fs-1"></i>
+                                    <h5 class="card-title">Passi</h5>
+                                    <p class="mb-1">Totale: <span id="steps-total">--</span></p>
+                                    <p class="mb-1"><br></span></p>
+                                    <p class="mb-1"><br></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Split Layout -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="heartRateChart"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <canvas id="spo2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interventions Tab -->
+                <div class="tab-pane fade" id="interventions" role="tabpanel" aria-labelledby="interventions-tab">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a th:href="@{/edit-intervention(patientId=${patient.getId()})}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Aggiungi intervento
+                        </a>
+                    </div>
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+
+        <a class="btn btn-light mt-2 mb-4" th:href="@{/dashboard}"><i class="bi bi-arrow-left"></i> Indietro</a>
+    </div>
+
+</body>
+
+<div th:replace="fragments/popup :: alerts(${successMessage}, ${errorMessage})"></div>
+
+
+<!-- JavaScript Dependencies -->
+<script th:src="@{/vendor/datatables/datatables.min.js}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0/dist/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+
+<!-- funzione per copiare il link -->
+<script>
+    function copyLink() {
+        var copyText = document.getElementById("myInput");
+
+        // Seleziona il testo
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // Per dispositivi mobili
+
+        // Copia il testo
+        navigator.clipboard.writeText(copyText.value).then(function () {
+            const alert = document.getElementById('copiedAlert');
+            alert.classList.remove('d-none');
+            setTimeout(() => alert.classList.add('d-none'), 2000);
+        }).catch(function (err) {
+            console.error("Errore nella copia:", err);
+        });
+    }
+</script>
+
+<script>
+    const heartRateCtx = document.getElementById('heartRateChart').getContext('2d');
+    const spo2Ctx = document.getElementById('spo2Chart').getContext('2d');
+
+    // Funzioni helper per verificare se un margine è valido (non null e diverso da 0)
+    const isValid = (val) => val !== null && val !== 0;
+
+    const heartRateChart = new Chart(heartRateCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Heart Rate',
+                data: [],
+                borderColor: 'red',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Time (HH:mm)' } },
+                y: { title: { display: true, text: 'BPM' } }
+            },
+            plugins: {
+                annotation: {
+                    annotations: {
+                        minHrLine: {
+                            type: 'line',
+                            yMin: margins.minHr,
+                            yMax: margins.minHr,
+                            borderColor: 'green',
+                            borderWidth: 1,
+                            display: isValid(margins.minHr),
+                            label: { content: 'min', enabled: true, position: 'start' }
+                        },
+                        maxHrLine: {
+                            type: 'line',
+                            yMin: margins.maxHr,
+                            yMax: margins.maxHr,
+                            borderColor: 'orange',
+                            borderWidth: 1,
+                            display: isValid(margins.maxHr),
+                            label: { content: 'max', enabled: true, position: 'start' }
+                        }
+                    }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy'
+                    },
+                    zoom: {
+                        pinch: {
+                            enabled: true
+                        },
+                        wheel: {
+                            enabled: true
+                        },
+                        mode: 'xy'
+                    }
+                }
+            }
+        }
+    });
+
+    const spo2Chart = new Chart(spo2Ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'SpO₂ %',
+                data: [],
+                borderColor: 'blue',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time (HH:mm)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'SpO₂ %'
+                    }
+                }
+            },
+            plugins: {
+                annotation: {
+                    annotations: {
+                        minSpo2Line: {
+                            type: 'line',
+                            yMin: margins.minSpo2,
+                            yMax: margins.minSpo2,
+                            borderColor: 'green',
+                            borderWidth: 1,
+                            display: isValid(margins.minSpo2),
+                            label: {
+                                content: 'min',
+                                enabled: true,
+                                position: 'start'
+                            }
+                        }
+                    }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy'
+                    },
+                    zoom: {
+                        pinch: {
+                            enabled: true
+                        },
+                        wheel: {
+                            enabled: true
+                        },
+                        mode: 'xy'
+                    }
+                }
+            }
+        }
+    });
+
+
+
+    document.getElementById("datePicker").addEventListener("change", function () {
+        const selectedDate = this.value;
+        console.log("Richiesta");
+        fetch(`/api/patient/biometric-data?patientId=[[${patient.id}]]&date=${selectedDate}`)
+            .then(res => res.json())
+            .then(data => updateDashboard(data));
+    });
+
+    function updateDashboard(data) {
+        console.log(data); // Aggiungi questa riga
+
+        // Update cards
+        document.getElementById('hr-max').textContent = data.heartRate.max;
+        document.getElementById('hr-avg').textContent = data.heartRate.avg;
+        document.getElementById('hr-min').textContent = data.heartRate.min;
+
+        document.getElementById('spo2-max').textContent = data.spo2.max;
+        document.getElementById('spo2-avg').textContent = data.spo2.avg;
+        document.getElementById('spo2-min').textContent = data.spo2.min;
+
+        document.getElementById('stress-max').textContent = data.stress.max;
+        document.getElementById('stress-avg').textContent = data.stress.avg;
+
+        document.getElementById('steps-total').textContent = data.steps.total;
+        // Update charts
+        heartRateChart.data.labels = data.heartRate.timeline.map(p => p.time);
+        heartRateChart.data.datasets[0].data = data.heartRate.timeline.map(p => p.value);
+        heartRateChart.update();
+
+        spo2Chart.data.labels = data.spo2.timeline.map(p => p.time);
+        spo2Chart.data.datasets[0].data = data.spo2.timeline.map(p => p.value);
+        spo2Chart.update();
+    }
+
+    // Load today’s data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("datePicker").value = today;
+        document.getElementById("datePicker").dispatchEvent(new Event('change'));
+    });
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('#interventionsTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "lengthMenu": [5, 10, 25, 50],
+            "pageLength": 10,
+            "language": {
+                "emptyTable": "No interventions available"
+            }
+        });
+    });
+
+</script>
+
+</html>

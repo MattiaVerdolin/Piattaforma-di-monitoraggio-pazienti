@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Add Patient">
+    <title>Patient Details</title>
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<div th:replace="fragments/navbar :: navbar(loggedUser=${loggedUser})"></div>
+
+    <div class="container mt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active"><a th:href="@{/dashboard}"> Dashboard</a></li>
+            <li class="breadcrumb-item" th:if="${isEdit}">
+                <a th:href="@{'/patient/' + ${patient.getId()}}"
+                   th:text="${patient.name} + ' ' + ${patient.surname}">Dettaglio paziente</a>
+            </li>
+            <li class="breadcrumb-item active">
+                <a th:text="${isEdit} ? 'Modifica paziente' : 'Crea paziente'"></a>
+            </li>
+        </ol>
+        <header class="mb-4">
+            <h1 th:text="${isEdit} ? 'Modifica paziente' : 'Crea paziente'"></h1>
+        </header>
+    </div>
+
+    <div class="container mt-4 pb-5">
+        <form th:action="@{${formAction}}" method="post" th:object="${patient}">
+            <input type="hidden" th:if="${isEdit}" th:field="*{id}" />
+
+            <div class="border rounded p-4 mb-4 bg-white shadow-sm">
+                <h4 class="border-bottom pb-2 mb-4"> Dati anagrafici</h4>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name">Nome <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="surname">Cognome <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="surname" th:field="*{surname}" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="birthDate">Data di nascita <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="birthDate" th:field="*{birthDate}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="sex">Sesso <span class="text-danger">*</span></label>
+                        <select class="form-select" id="sex" th:field="*{sex}" required>
+                            <option value="" disabled selected>Seleziona...</option>
+                            <option value="M">Maschio</option>
+                            <option value="F">Femmina</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border rounded p-4 mb-4 bg-white shadow-sm">
+                <h4 class="border-bottom pb-2 mb-4"> Quadro clinico</h4>
+
+                <div class="row">
+
+                    <div class="col-md-4">
+                        <label for="minHr">Soglia BPM minimi</label>
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control text-center" id="minHr" name="minHr" step="any"
+                                   th:value="${minHr != null ? minHr.intValue() : 60}">
+                            <span class="input-group-text">bpm</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="maxHr">Soglia BPM massimi</label>
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control text-center" id="maxHr" name="maxHr" step="any"
+                                   th:value="${maxHr != null ? maxHr.intValue() : 100}">
+                            <span class="input-group-text">bpm</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="minSaturation">Soglia saturazione minima</label>
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control text-center" id="minSaturation" name="minSaturation"
+                                   step="any" max="100" th:value="${minSaturation != null ? minSaturation.intValue() : 100}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="disease">Categoria clinica <span class="text-danger">*</span></label>
+                    <select class="form-select" id="disease" name="diseaseCategoryId" required>
+                        <option value="" disabled selected>Seleziona categoria</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id}"
+                                th:text="${cat.name}"
+                                th:selected="${cat.id == patient.diseaseCategory?.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description">Descrizione patologia <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="description" rows="3" th:field="*{diagnosisDesc}" required></textarea>
+                </div>
+            </div>
+
+            <div class="border rounded p-4 mb-4 bg-white shadow-sm">
+                <h4 class="border-bottom pb-2 mb-4"> Personale di riferimento</h4>
+
+                <div class="row">
+                    <!-- Medico di base -->
+                    <div class="col-md-3 mb-3">
+                        <label for="medBase">Medico di base <span class="text-danger">*</span></label>
+                        <select class="form-select" id="medBase" name="medicoBaseId" required>
+                            <option value="" disabled th:selected="${medicoBaseId == null}">Seleziona medico di base</option>
+                            <option th:each="hp : ${professionals}"
+                                    th:if="${hp.role.name() == 'MED_FAM'}"
+                                    th:value="${hp.id}"
+                                    th:text="${hp.name + ' ' + hp.surname}"
+                                    th:selected="${hp.id == medicoBaseId}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Medico pneumologo -->
+                    <div class="col-md-3 mb-3">
+                        <label for="pneumo">Medico pneumologo</label>
+                        <select class="form-select" id="pneumo" name="medicoPneumoId">
+                            <option value="" th:selected="${medicoPneumoId == null}">-- Nessuno --</option>
+                            <option th:each="hp : ${professionals}"
+                                    th:if="${hp.role.name() == 'MED_PNEUM'}"
+                                    th:value="${hp.id}"
+                                    th:text="${hp.name + ' ' + hp.surname}"
+                                    th:selected="${hp.id == medicoPneumoId}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Fisioterapista -->
+                    <div class="col-md-3 mb-3">
+                        <label for="fisio">Fisioterapista</label>
+                        <select class="form-select" id="fisio" name="fisioterapistaId">
+                            <option value="" th:selected="${fisioterapistaId == null}">-- Nessuno --</option>
+                            <option th:each="hp : ${professionals}"
+                                    th:if="${hp.role.name() == 'FISIO'}"
+                                    th:value="${hp.id}"
+                                    th:text="${hp.name + ' ' + hp.surname}"
+                                    th:selected="${hp.id == fisioterapistaId}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Medico cure palliative -->
+                    <div class="col-md-3 mb-3">
+                        <label for="pal">Medico cure palliative</label>
+                        <select class="form-select" id="pal" name="medicoPalId">
+                            <option value="" th:selected="${medicoPalId == null}">-- Nessuno --</option>
+                            <option th:each="hp : ${professionals}"
+                                    th:if="${hp.role.name() == 'MED_PAL'}"
+                                    th:value="${hp.id}"
+                                    th:text="${hp.name + ' ' + hp.surname}"
+                                    th:selected="${hp.id == medicoPalId}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 mb-5">
+                <button type="submit" class="btn btn-primary px-4"
+                        th:text="${isEdit} ? 'Aggiorna paziente' : 'Salva paziente'">
+                </button>
+
+            </div>
+        </form>
+
+        <a class="btn btn-light mt-2" th:href="@{/dashboard}"><i class="bi bi-arrow-left"></i> Indietro</a>
+
+    </div>
+</body>
+
+<div th:replace="fragments/popup :: alerts(${successMessage}, ${errorMessage})"></div>
+
+</html>

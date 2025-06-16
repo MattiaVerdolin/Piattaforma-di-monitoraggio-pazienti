@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Healthcare Dashboard">
+    <title>Dashboard</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css"/>
+    <!-- Option 1: Include in HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div th:replace="fragments/navbar :: navbar(loggedUser=${loggedUser})"></div>
+
+    <div class="container mt-4 pb-5">
+        <!-- Breadcrumb -->
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a>Aggiungi nuova categoria clinica</a></li>
+        </ol>
+
+        <div class="border rounded p-4 mb-4 bg-white shadow-sm">
+            <h4 class="border-bottom pb-2 mb-4" th:text="${isEdit} ? 'Modifica categoria' : 'Aggiungi categoria'">
+                Categorie cliniche</h4>
+
+            <div class="p-4">
+                <form th:action="@{${formAction}}"
+                      method="post"
+                      th:object="${diseaseCategory}">
+
+                    <input type="hidden" th:if="${isEdit}" th:field="*{id}"/>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name">Nome<span class="text-danger" th:if="${!isEdit}">*</span></label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="description">Descrizione<span class="text-danger"
+                                                                      th:if="${!isEdit}">*</span></label>
+                            <input type="text" class="form-control" id="description" th:field="*{description}" required>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary px-4"
+                                th:text="${isEdit} ? 'Aggiorna' : 'Aggiungi'">Salva
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="border rounded p-4 mb-4 bg-white shadow-sm">
+
+            <h4 class="border-bottom pb-2 mb-4">Categorie cliniche</h4>
+            <div class="p-4">
+                <table id="dashboardTablePatients" class="table table-striped table-hover table-bordered">
+                    <thead>
+                    <tr>
+                        <th scope="col">Nome</th>
+                        <th scope="col">Descrizione</th>
+                        <th scope="col">Azioni</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="category : ${categories}">
+                        <td th:text="${category.name}">Influenza</td>
+                        <td th:text="${category.description}">Description</td>
+
+                        <td>
+                            <a th:href="@{'/disease-categories/edit/' + ${category.id}}"
+                               class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a th:href="@{'/disease-categories/delete/' + ${category.id}}"
+                               class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+<div th:replace="fragments/popup :: alerts(${successMessage}, ${errorMessage})"></div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        const commonOptions = {
+            responsive: true,
+            language: {
+                search: "Cerca:",
+                lengthMenu: "Mostra _MENU_ risultati",
+                info: "Mostrando da _START_ a _END_ di _TOTAL_ entries",
+                paginate: {
+                    previous: "←",
+                    next: "→"
+                }
+            }
+        };
+
+        $('#dashboardTablePatients').DataTable(commonOptions);
+        $('#dashboardTableHp').DataTable(commonOptions);
+    });
+</script>
+</html>
